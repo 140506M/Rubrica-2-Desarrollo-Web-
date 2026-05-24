@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Cliente — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div style="background:var(--naranja);padding:14px 20px;display:flex;align-items:center;gap:10px;">
+  <a href="/" style="background:rgba(0,0,0,0.12);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;">←</a>
+  <span style="font-size:16px;font-weight:600;color:var(--marron);">Iniciar sesión</span>
+</div>
+<div class="container-sm">
+  <div class="text-center mt-3 mb-2">
+    <div style="width:60px;height:60px;background:#EAF3DE;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 10px;">🛍️</div>
+    <h2 style="font-size:20px;">Bienvenido de vuelta</h2>
+    <p class="text-muted">Cuenta de cliente</p>
+  </div>
+  <div id="msg-alert"></div>
+  <div class="card">
+    <div class="form-group">
+      <label>Correo electrónico</label>
+      <input type="email" id="email" placeholder="correo@email.com">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="password" placeholder="Tu contraseña">
+    </div>
+    <button class="btn btn-primary btn-full mt-1" onclick="login()">Ingresar →</button>
+  </div>
+  <p class="text-center text-muted mt-1">
+    ¿No tienes cuenta? <a href="/pages/registro-cliente.html" style="color:var(--naranja-dark);font-weight:600;">Regístrate gratis</a>
+  </p>
+</div>
+<script src="/js/api.js"></script>
+<script>
+async function login() {
+  const alertEl = document.getElementById('msg-alert');
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !password) return showAlert(alertEl, 'Completa todos los campos');
+  const res = await apiPost('/auth/cliente/login', { email, password });
+  if (res.error) return showAlert(alertEl, res.error);
+  setUser(res);
+  window.location.href = '/pages/tiendas.html';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

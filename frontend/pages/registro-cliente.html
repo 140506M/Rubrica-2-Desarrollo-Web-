@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro Cliente — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div style="background:var(--naranja);padding:14px 20px;display:flex;align-items:center;gap:10px;">
+  <a href="/" style="background:rgba(0,0,0,0.12);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;">←</a>
+  <span style="font-size:16px;font-weight:600;color:var(--marron);">Crear cuenta de cliente</span>
+</div>
+
+<div class="container-sm">
+  <div class="text-center mt-2 mb-2">
+    <div style="font-size:36px;">🛍️</div>
+    <p class="text-muted">Rápido y gratis. Solo tarda 1 minuto.</p>
+  </div>
+
+  <div id="msg-alert"></div>
+
+  <div class="card">
+    <div class="form-group">
+      <label>Nombre completo</label>
+      <input type="text" id="nombre" placeholder="Laura Martínez">
+    </div>
+    <div class="form-group">
+      <label>Teléfono (WhatsApp)</label>
+      <input type="tel" id="telefono" placeholder="+57 300 000 0000">
+    </div>
+    <div class="form-group">
+      <label>Correo electrónico</label>
+      <input type="email" id="email" placeholder="correo@email.com">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="password" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="form-group">
+      <label>Dirección de entrega</label>
+      <input type="text" id="direccion" placeholder="Calle 72 # 46-12, apto 301">
+    </div>
+    <div class="alert alert-info">
+      📍 También usamos tu GPS para encontrar tiendas más rápido
+    </div>
+    <button class="btn btn-primary btn-full mt-1" onclick="registrar()">Crear mi cuenta →</button>
+  </div>
+
+  <p class="text-center text-muted mt-1">
+    ¿Ya tienes cuenta? <a href="/pages/login-cliente.html" style="color:var(--naranja-dark);font-weight:600;">Iniciar sesión</a>
+  </p>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+async function registrar() {
+  const alertEl = document.getElementById('msg-alert');
+  const nombre = document.getElementById('nombre').value.trim();
+  const telefono = document.getElementById('telefono').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const direccion = document.getElementById('direccion').value.trim();
+
+  if (!nombre || !telefono || !email || !password || !direccion) {
+    return showAlert(alertEl, 'Por favor completa todos los campos');
+  }
+  if (password.length < 6) return showAlert(alertEl, 'La contraseña debe tener al menos 6 caracteres');
+
+  const res = await apiPost('/auth/cliente/register', { nombre, email, password, telefono, direccion });
+  if (res.error) return showAlert(alertEl, res.error);
+
+  setUser(res);
+  showAlert(alertEl, '¡Cuenta creada! Redirigiendo...', 'success');
+  setTimeout(() => window.location.href = '/pages/tiendas.html', 1000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="topbar" style="background:var(--marron);">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="/img/logo.png" style="height:30px;" alt="TiendaYa">
+    <div>
+      <div id="topbar-tienda" style="font-size:14px;font-weight:600;color:var(--naranja);"></div>
+      <div id="topbar-estado" style="font-size:11px;color:#c9a800;"></div>
+    </div>
+  </div>
+  <button class="btn-logout" onclick="logout()">Salir</button>
+</div>
+
+<div class="container">
+  <div class="panel-tabs" id="panel-tabs">
+    <button class="panel-tab active" onclick="showTab('pedidos',this)">📦 Pedidos <span id="badge-pedidos" style="display:none;background:var(--danger);color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;">0</span></button>
+    <button class="panel-tab" onclick="showTab('productos',this)">🛒 Productos</button>
+    <button class="panel-tab" onclick="showTab('domiciliarios',this)">🛵 Domiciliarios</button>
+    <button class="panel-tab" onclick="showTab('config',this)">⚙️ Config</button>
+  </div>
+
+  <!-- PEDIDOS -->
+  <div id="tab-pedidos">
+    <div class="metrics-grid" id="metrics"></div>
+    <div id="lista-pedidos"><p class="text-muted">Cargando pedidos...</p></div>
+  </div>
+
+  <!-- PRODUCTOS -->
+  <div id="tab-productos" class="hidden">
+    <div class="flex flex-between flex-center mb-2">
+      <h2 class="page-title" style="margin:0;">Mis productos</h2>
+      <button class="btn btn-primary" onclick="toggleFormProd()">+ Agregar</button>
+    </div>
+    <div id="form-prod" class="card hidden">
+      <h3 style="font-size:15px;margin-bottom:12px;" id="form-prod-titulo">Nuevo producto</h3>
+      <input type="hidden" id="prod-edit-id">
+      <div class="form-row">
+        <div class="form-group"><label>Nombre</label><input id="pnombre" placeholder="Arroz Diana"></div>
+        <div class="form-group"><label>Categoría</label>
+          <select id="pcategoria">
+            <option>Granos</option><option>Frescos</option><option>Bebidas</option>
+            <option>Aseo</option><option>Lácteos</option><option>Carnes</option>
+            <option>Panadería</option><option>General</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Precio</label><input id="pprecio" type="number" placeholder="3200"></div>
+        <div class="form-group"><label>Unidad de venta</label>
+          <select id="punidad"><option>unidad</option><option>kg</option><option>lb</option><option>litro</option><option>500g</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Stock disponible</label><input id="pstock" type="number" placeholder="45"></div>
+        <div class="form-group"><label>Stock mínimo (alerta)</label><input id="pstockmin" type="number" placeholder="5"></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="toggleFormProd()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarProducto()">Guardar</button>
+      </div>
+    </div>
+    <div id="lista-productos"></div>
+  </div>
+
+  <!-- DOMICILIARIOS -->
+  <div id="tab-domiciliarios" class="hidden">
+    <div class="flex flex-between flex-center mb-2">
+      <h2 class="page-title" style="margin:0;">Domiciliarios</h2>
+      <button class="btn btn-primary" onclick="toggleFormDomi()">+ Agregar</button>
+    </div>
+    <div id="form-domi" class="card hidden">
+      <input type="hidden" id="domi-edit-id">
+      <div class="form-row">
+        <div class="form-group"><label>Nombre</label><input id="dnombre" placeholder="Pedro Álvarez"></div>
+        <div class="form-group"><label>Cédula</label><input id="dcedula" placeholder="12345678"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Teléfono</label><input id="dtelefono" placeholder="310 555 1111"></div>
+        <div class="form-group"><label>Vehículo</label>
+          <select id="dvehiculo"><option>Moto</option><option>Bicicleta</option><option>A pie</option></select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-outline" onclick="toggleFormDomi()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarDomi()">Guardar</button>
+      </div>
+    </div>
+    <div id="lista-domiciliarios"></div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="tab-config" class="hidden">
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:14px;">Estado de la tienda</h3>
+      <div class="flex flex-between flex-center mb-2">
+        <div><div style="font-size:14px;">Tienda abierta</div><div class="text-muted">Los clientes pueden hacer pedidos</div></div>
+        <label style="cursor:pointer;display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="cfg-abierta" style="width:20px;height:20px;cursor:pointer;accent-color:var(--naranja);">
+        </label>
+      </div>
+      <div class="flex flex-between flex-center">
+        <div><div style="font-size:14px;">Domicilios activos</div><div class="text-muted">Ofrecer envío a domicilio</div></div>
+        <input type="checkbox" id="cfg-domicilios" style="width:20px;height:20px;cursor:pointer;accent-color:var(--naranja);">
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:14px;">Horarios de atención</h3>
+      <div class="form-group"><label>Lunes – Sábado</label><input id="cfg-hora-sem" placeholder="6:00 am - 9:00 pm"></div>
+      <div class="form-group"><label>Domingos</label><input id="cfg-hora-dom" placeholder="7:00 am - 2:00 pm"></div>
+    </div>
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:14px;">Métodos de pago</h3>
+      <div id="cfg-pagos"></div>
+    </div>
+    <button class="btn btn-primary btn-full mt-1 mb-2" onclick="guardarConfig()">Guardar configuración</button>
+    <div id="msg-config"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = getUser();
+if (!user || user.tipo !== 'dueno') window.location.href = '/';
+
+document.getElementById('topbar-tienda').textContent = user.nombre_tienda || 'Mi Tienda';
+
+let tiendaData = null;
+let domiciliarios = [];
+let metodosPago = [];
+
+function showTab(tab, el) {
+  ['pedidos','productos','domiciliarios','config'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'pedidos') cargarPedidos();
+  if (tab === 'productos') cargarProductos();
+  if (tab === 'domiciliarios') cargarDomiciliarios();
+  if (tab === 'config') cargarConfig();
+}
+
+// ── PEDIDOS ──
+async function cargarPedidos() {
+  const pedidos = await apiGet('/pedidos/tienda/' + user.id);
+  const pendientes = pedidos.filter(p => p.estado === 'pendiente');
+  const badge = document.getElementById('badge-pedidos');
+  badge.textContent = pendientes.length;
+  badge.style.display = pendientes.length ? 'inline' : 'none';
+  document.getElementById('topbar-estado').textContent = pendientes.length
+    ? `⚠️ ${pendientes.length} pedido(s) nuevo(s)` : '● Tienda activa';
+
+  const hoy = pedidos.filter(p => p.estado === 'entregado');
+  const ventas = hoy.reduce((s, p) => s + p.total, 0);
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric-card"><div class="metric-val" style="color:var(--naranja-dark);">${pendientes.length}</div><div class="metric-lbl">Nuevos</div></div>
+    <div class="metric-card"><div class="metric-val" style="color:#378ADD;">${pedidos.filter(p=>p.estado==='en_preparacion').length}</div><div class="metric-lbl">En prep.</div></div>
+    <div class="metric-card"><div class="metric-val" style="color:var(--success);">${pedidos.filter(p=>p.estado==='en_camino').length}</div><div class="metric-lbl">En camino</div></div>
+    <div class="metric-card"><div class="metric-val">${formatCOP(ventas)}</div><div class="metric-lbl">Entregados</div></div>
+  `;
+
+  const lista = document.getElementById('lista-pedidos');
+  if (!pedidos.length) { lista.innerHTML = '<p class="text-muted">No hay pedidos aún</p>'; return; }
+
+  lista.innerHTML = pedidos.map(p => `
+    <div class="pedido-card ${p.estado}" id="pedido-${p.id}">
+      <div class="flex flex-between flex-center mb-1">
+        <span style="font-size:13px;font-weight:600;">#${p.id} — ${p.cliente_nombre}</span>
+        ${estadoBadge(p.estado)}
+      </div>
+      <p class="text-muted" style="font-size:12px;margin-bottom:6px;">📍 ${p.direccion_entrega} · ${p.metodo_pago}</p>
+      <div id="detalle-${p.id}" style="font-size:12px;color:var(--gris-text);margin-bottom:8px;">Cargando items...</div>
+      <div class="flex flex-between flex-center">
+        <span style="font-weight:700;">${formatCOP(p.total)}</span>
+        <span class="text-muted" style="font-size:11px;">${p.domiciliario_nombre ? '🛵 '+p.domiciliario_nombre : ''}</span>
+      </div>
+      ${accionesPedido(p)}
+    </div>
+  `).join('');
+
+  // Cargar detalle de cada pedido
+  pedidos.forEach(async p => {
+    const det = await apiGet('/pedidos/' + p.id + '/detalle');
+    const el = document.getElementById('detalle-' + p.id);
+    if (el) el.textContent = det.map(d => `${d.producto_nombre} × ${d.cantidad} ${d.unidad}`).join(' · ');
+  });
+}
+
+function accionesPedido(p) {
+  const domiOpts = domiciliarios.filter(d => d.activo).map(d =>
+    `<option value="${d.id}">${d.nombre} — ${d.vehiculo}</option>`).join('');
+
+  if (p.estado === 'pendiente') return `
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-success" style="flex:1;" onclick="cambiarEstado(${p.id},'en_preparacion')">✓ Aceptar</button>
+      <button class="btn btn-danger" onclick="cambiarEstado(${p.id},'cancelado')">✕</button>
+    </div>`;
+  if (p.estado === 'en_preparacion') return `
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+      <select id="domi-sel-${p.id}" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid var(--borde);border-radius:8px;">
+        <option value="">Sin domiciliario</option>${domiOpts}
+      </select>
+      <button class="btn btn-primary" onclick="enviarPedido(${p.id})">Enviar</button>
+    </div>`;
+  if (p.estado === 'en_camino') return `
+    <button class="btn btn-success btn-full mt-1" style="font-size:12px;" onclick="cambiarEstado(${p.id},'entregado')">✓ Marcar entregado</button>`;
+  return '';
+}
+
+async function cambiarEstado(id, estado) {
+  await apiPut('/pedidos/' + id + '/estado', { estado });
+  cargarPedidos();
+}
+async function enviarPedido(id) {
+  const sel = document.getElementById('domi-sel-' + id);
+  const domiId = sel ? parseInt(sel.value) || null : null;
+  await apiPut('/pedidos/' + id + '/estado', { estado: 'en_camino', domiciliario_id: domiId });
+  cargarPedidos();
+}
+
+// ── PRODUCTOS ──
+let productosData = [];
+async function cargarProductos() {
+  productosData = await apiGet('/productos/' + user.id);
+  const lista = document.getElementById('lista-productos');
+  lista.innerHTML = productosData.map(p => `
+    <div class="card card-sm flex flex-between flex-center gap-1" style="margin-bottom:8px;">
+      <span style="font-size:20px;">${emojiCategoria(p.categoria)}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;">${p.nombre}</div>
+        <div class="text-muted">${formatCOP(p.precio)} / ${p.unidad} · ${p.categoria}</div>
+      </div>
+      <span class="badge ${p.stock<=0?'badge-stock-out':p.stock<=p.stock_minimo?'badge-stock-low':'badge-stock-ok'}">${p.stock} ${p.unidad}</span>
+      <button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="editarProd(${p.id})">Editar</button>
+      <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="eliminarProd(${p.id})">✕</button>
+    </div>
+  `).join('') || '<p class="text-muted">No tienes productos. ¡Agrega el primero!</p>';
+}
+
+function toggleFormProd() {
+  document.getElementById('form-prod').classList.toggle('hidden');
+  document.getElementById('prod-edit-id').value = '';
+  document.getElementById('form-prod-titulo').textContent = 'Nuevo producto';
+  ['pnombre','pprecio','pstock','pstockmin'].forEach(id => document.getElementById(id).value = '');
+}
+
+function editarProd(id) {
+  const p = productosData.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('prod-edit-id').value = p.id;
+  document.getElementById('pnombre').value = p.nombre;
+  document.getElementById('pcategoria').value = p.categoria;
+  document.getElementById('pprecio').value = p.precio;
+  document.getElementById('punidad').value = p.unidad;
+  document.getElementById('pstock').value = p.stock;
+  document.getElementById('pstockmin').value = p.stock_minimo;
+  document.getElementById('form-prod-titulo').textContent = 'Editar producto';
+  document.getElementById('form-prod').classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function guardarProducto() {
+  const editId = document.getElementById('prod-edit-id').value;
+  const body = {
+    dueno_id: user.id,
+    nombre: document.getElementById('pnombre').value.trim(),
+    categoria: document.getElementById('pcategoria').value,
+    precio: parseFloat(document.getElementById('pprecio').value),
+    unidad: document.getElementById('punidad').value,
+    stock: parseFloat(document.getElementById('pstock').value) || 0,
+    stock_minimo: parseFloat(document.getElementById('pstockmin').value) || 5
+  };
+  if (!body.nombre || !body.precio) return alert('Nombre y precio son obligatorios');
+  if (editId) await apiPut('/productos/' + editId, body);
+  else await apiPost('/productos', body);
+  toggleFormProd();
+  cargarProductos();
+}
+
+async function eliminarProd(id) {
+  if (!confirm('¿Eliminar este producto?')) return;
+  await apiDelete('/productos/' + id);
+  cargarProductos();
+}
+
+// ── DOMICILIARIOS ──
+async function cargarDomiciliarios() {
+  domiciliarios = await apiGet('/domiciliarios/' + user.id);
+  const lista = document.getElementById('lista-domiciliarios');
+  lista.innerHTML = domiciliarios.map(d => `
+    <div class="card card-sm flex flex-between flex-center gap-1" style="margin-bottom:8px;">
+      <span style="font-size:22px;">${d.vehiculo==='Bicicleta'?'🚲':'🛵'}</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${d.nombre}</div>
+        <div class="text-muted">${d.vehiculo} · ${d.telefono}</div>
+      </div>
+      <span class="badge ${d.activo?'badge-open':'badge-closed'}">${d.activo?'Activo':'Inactivo'}</span>
+      <button class="btn btn-outline" style="padding:4px 10px;font-size:12px;" onclick="editarDomi(${d.id})">Editar</button>
+      <button class="btn btn-danger" style="padding:4px 10px;font-size:12px;" onclick="eliminarDomi(${d.id})">✕</button>
+    </div>
+  `).join('') || '<p class="text-muted">No tienes domiciliarios registrados.</p>';
+}
+
+function toggleFormDomi() { document.getElementById('form-domi').classList.toggle('hidden'); }
+
+function editarDomi(id) {
+  const d = domiciliarios.find(x => x.id === id);
+  if (!d) return;
+  document.getElementById('domi-edit-id').value = d.id;
+  document.getElementById('dnombre').value = d.nombre;
+  document.getElementById('dcedula').value = d.cedula;
+  document.getElementById('dtelefono').value = d.telefono;
+  document.getElementById('dvehiculo').value = d.vehiculo;
+  document.getElementById('form-domi').classList.remove('hidden');
+}
+
+async function guardarDomi() {
+  const editId = document.getElementById('domi-edit-id').value;
+  const body = {
+    dueno_id: user.id,
+    nombre: document.getElementById('dnombre').value.trim(),
+    cedula: document.getElementById('dcedula').value.trim(),
+    telefono: document.getElementById('dtelefono').value.trim(),
+    vehiculo: document.getElementById('dvehiculo').value,
+    activo: 1
+  };
+  if (!body.nombre || !body.cedula || !body.telefono) return alert('Completa todos los campos');
+  let res;
+  if (editId) res = await apiPut('/domiciliarios/' + editId, body);
+  else res = await apiPost('/domiciliarios', body);
+  if (res.error) return alert(res.error);
+  toggleFormDomi();
+  cargarDomiciliarios();
+}
+
+async function eliminarDomi(id) {
+  if (!confirm('¿Eliminar este domiciliario?')) return;
+  await apiDelete('/domiciliarios/' + id);
+  cargarDomiciliarios();
+}
+
+// ── CONFIG ──
+async function cargarConfig() {
+  tiendaData = await apiGet('/tienda/' + user.id);
+  document.getElementById('cfg-abierta').checked = tiendaData.tienda_abierta === 1;
+  document.getElementById('cfg-domicilios').checked = tiendaData.domicilios_activos === 1;
+  document.getElementById('cfg-hora-sem').value = tiendaData.horario_semana || '';
+  document.getElementById('cfg-hora-dom').value = tiendaData.horario_domingo || '';
+
+  metodosPago = await apiGet('/metodos-pago/' + user.id);
+  const iconos = { 'Nequi':'💚','Efectivo':'💵','Llave Bancolombia':'🔑','Daviplata':'📱','Transferencia bancaria':'🏦' };
+  document.getElementById('cfg-pagos').innerHTML = metodosPago.map(m => `
+    <div class="flex flex-center gap-1 mb-2" style="padding:10px;border:1px solid var(--borde);border-radius:10px;">
+      <input type="checkbox" id="mp-${m.id}" ${m.activo?'checked':''} style="width:18px;height:18px;cursor:pointer;accent-color:var(--naranja);">
+      <span style="font-size:18px;">${iconos[m.nombre]||'💳'}</span>
+      <span style="font-size:13px;font-weight:600;flex:1;">${m.nombre}</span>
+      <input type="text" id="mpd-${m.id}" value="${m.detalle||''}" placeholder="Número o alias" style="font-size:12px;padding:4px 8px;border:1px solid var(--borde);border-radius:6px;width:160px;">
+    </div>
+  `).join('');
+}
+
+async function guardarConfig() {
+  await apiPut('/tienda/' + user.id + '/config', {
+    horario_semana: document.getElementById('cfg-hora-sem').value,
+    horario_domingo: document.getElementById('cfg-hora-dom').value,
+    tienda_abierta: document.getElementById('cfg-abierta').checked ? 1 : 0,
+    domicilios_activos: document.getElementById('cfg-domicilios').checked ? 1 : 0
+  });
+  for (const m of metodosPago) {
+    await apiPut('/metodos-pago/' + m.id, {
+      activo: document.getElementById('mp-' + m.id).checked ? 1 : 0,
+      detalle: document.getElementById('mpd-' + m.id).value
+    });
+  }
+  showAlert(document.getElementById('msg-config'), '✅ Configuración guardada', 'success');
+  document.getElementById('topbar-tienda').textContent = user.nombre_tienda;
+}
+
+function estadoBadge(estado) {
+  const map = { pendiente:['Nuevo','badge-new'], en_preparacion:['En preparación','badge-prep'], en_camino:['En camino','badge-camino'], entregado:['Entregado','badge-done'], cancelado:['Cancelado','badge-closed'] };
+  const [lbl,cls] = map[estado]||[estado,'badge-new'];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+// Iniciar
+cargarPedidos();
+cargarDomiciliarios();
+setInterval(cargarPedidos, 20000); // Refrescar pedidos cada 20s
+</script>
+</body>
+</html>

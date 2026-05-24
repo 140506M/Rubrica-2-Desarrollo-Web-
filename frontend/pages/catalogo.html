@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <a href="/pages/tiendas.html" style="background:rgba(0,0,0,0.12);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;">←</a>
+    <span id="topbar-nombre" style="font-size:15px;font-weight:600;color:var(--marron);">Tienda</span>
+  </div>
+  <a href="/pages/carrito.html" style="position:relative;text-decoration:none;">
+    <span style="font-size:22px;">🛒</span>
+    <span id="cart-count" style="position:absolute;top:-6px;right:-6px;background:var(--danger);color:white;border-radius:50%;width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;display:none;">0</span>
+  </a>
+</div>
+
+<div class="container">
+  <div class="cat-scroll" id="cat-scroll"></div>
+  <div class="prod-grid" id="prod-grid"></div>
+</div>
+
+<button class="cart-fab hidden" id="cart-fab" onclick="window.location.href='/pages/carrito.html'">
+  <span id="fab-count" style="font-size:13px;">0 productos</span>
+  <span id="fab-total" style="font-size:14px;font-weight:700;">Ver carrito →</span>
+</button>
+
+<script src="/js/api.js"></script>
+<script>
+const user = getUser();
+if (!user || user.tipo !== 'cliente') window.location.href = '/';
+
+const tienda = JSON.parse(localStorage.getItem('tiendaya_tienda') || 'null');
+if (!tienda) window.location.href = '/pages/tiendas.html';
+
+document.getElementById('topbar-nombre').textContent = tienda.nombre_tienda;
+
+let productos = [];
+let catActiva = 'Todos';
+
+async function cargar() {
+  productos = await apiGet('/productos/' + tienda.id);
+  renderCategorias();
+  renderProductos();
+  actualizarFab();
+}
+
+function renderCategorias() {
+  const cats = ['Todos', ...new Set(productos.map(p => p.categoria))];
+  document.getElementById('cat-scroll').innerHTML = cats.map(c =>
+    `<span class="cat-pill ${c === catActiva ? 'active' : ''}" onclick="filtrar('${c}')">${c}</span>`
+  ).join('');
+}
+
+function filtrar(cat) {
+  catActiva = cat;
+  renderCategorias();
+  renderProductos();
+}
+
+function renderProductos() {
+  const filtrados = catActiva === 'Todos' ? productos : productos.filter(p => p.categoria === catActiva);
+  const grid = document.getElementById('prod-grid');
+  if (filtrados.length === 0) {
+    grid.innerHTML = '<p class="text-muted">No hay productos en esta categoría</p>';
+    return;
+  }
+  grid.innerHTML = filtrados.map(p => {
+    const agotado = p.stock <= 0;
+    const stockBadge = agotado
+      ? '<span class="badge badge-stock-out">Agotado</span>'
+      : p.stock <= p.stock_minimo
+        ? `<span class="badge badge-stock-low">Quedan ${p.stock} ${p.unidad}</span>`
+        : '';
+    return `
+    <div class="prod-card ${agotado ? 'agotado' : ''}" onclick="${agotado ? '' : 'abrirModal(' + p.id + ')'}">
+      <div class="prod-emoji">${emojiCategoria(p.categoria)}</div>
+      <div class="prod-name">${p.nombre}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:4px;">
+        <div>
+          <div class="prod-price">${formatCOP(p.precio)}</div>
+          <div class="prod-unit">por ${p.unidad}</div>
+        </div>
+        ${agotado ? '' : '<button class="prod-add" onclick="event.stopPropagation();agregarRapido(' + p.id + ')">+</button>'}
+      </div>
+      <div style="margin-top:4px;">${stockBadge}</div>
+    </div>`;
+  }).join('');
+}
+
+function agregarRapido(id) {
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  const paso = ['kg', 'lb', 'litro'].includes(p.unidad) ? 0.5 : 1;
+  addToCart(p, paso);
+  actualizarFab();
+  // Animación rápida
+  const btn = event.target;
+  btn.textContent = '✓';
+  btn.style.background = 'var(--success)';
+  btn.style.color = 'white';
+  setTimeout(() => { btn.textContent = '+'; btn.style.background = ''; btn.style.color = ''; }, 800);
+}
+
+let modalProd = null;
+function abrirModal(id) {
+  modalProd = productos.find(x => x.id === id);
+  if (!modalProd) return;
+  const esPeso = ['kg', 'lb', 'litro'].includes(modalProd.unidad);
+  const paso = esPeso ? 0.5 : 1;
+  document.getElementById('modal-nombre').textContent = modalProd.nombre;
+  document.getElementById('modal-precio').textContent = formatCOP(modalProd.precio) + ' por ' + modalProd.unidad;
+  document.getElementById('modal-qty').value = paso;
+  document.getElementById('modal-qty').step = paso;
+  document.getElementById('modal-qty').min = paso;
+  document.getElementById('modal-nota').textContent = esPeso
+    ? `⚖️ Este producto se vende por ${modalProd.unidad}. El precio final se ajusta al peso real.`
+    : '';
+  document.getElementById('modal').style.display = 'flex';
+}
+
+function cerrarModal() {
+  document.getElementById('modal').style.display = 'none';
+}
+
+function agregarDesdeModal() {
+  const qty = parseFloat(document.getElementById('modal-qty').value);
+  if (!qty || qty <= 0) return;
+  addToCart(modalProd, qty);
+  actualizarFab();
+  cerrarModal();
+}
+
+function actualizarFab() {
+  const cart = getCart();
+  const fab = document.getElementById('cart-fab');
+  const countEl = document.getElementById('cart-count');
+  if (cart.items.length === 0) {
+    fab.classList.add('hidden');
+    countEl.style.display = 'none';
+    return;
+  }
+  fab.classList.remove('hidden');
+  const total = cartTotal();
+  document.getElementById('fab-count').textContent = cart.items.length + ' producto(s)';
+  document.getElementById('fab-total').textContent = formatCOP(total) + ' → Ver carrito';
+  countEl.textContent = cart.items.length;
+  countEl.style.display = 'flex';
+}
+
+cargar();
+</script>
+
+<!-- Modal cantidad -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:flex-end;justify-content:center;">
+  <div style="background:var(--blanco);border-radius:20px 20px 0 0;padding:24px 20px;width:100%;max-width:480px;">
+    <h3 id="modal-nombre" style="font-size:18px;margin-bottom:4px;"></h3>
+    <p id="modal-precio" style="color:var(--marron-light);margin-bottom:14px;font-size:14px;"></p>
+    <div id="modal-nota" style="font-size:12px;color:var(--marron-light);background:var(--warning-bg);padding:8px 12px;border-radius:8px;margin-bottom:14px;"></div>
+    <div class="form-group">
+      <label>Cantidad</label>
+      <input type="number" id="modal-qty" style="font-size:20px;font-weight:700;text-align:center;" min="0.5" step="0.5" value="1">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-outline" style="flex:1;" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="agregarDesdeModal()">Agregar al carrito</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiendas — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="topbar">
+  <a class="topbar-logo" href="/pages/tiendas.html">
+    <img src="/img/logo.png" alt="TiendaYa"> TiendaYa
+  </a>
+  <nav class="topbar-nav">
+    <a href="/pages/mis-pedidos.html">Mis pedidos</a>
+    <button class="btn-logout" onclick="logout()">Salir</button>
+  </nav>
+</div>
+
+<div class="container">
+  <div id="saludo" style="margin-bottom:14px;"></div>
+
+  <div class="alert alert-info" id="gps-banner" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+    <span>📍</span>
+    <span>Activa tu ubicación para ver tiendas más cercanas</span>
+    <button class="btn btn-outline" style="margin-left:auto;padding:4px 12px;font-size:12px;" onclick="pedirGPS()">Activar</button>
+  </div>
+
+  <h2 class="page-title">Tiendas cerca de ti</h2>
+  <p class="page-sub" id="sub-tiendas">Cargando...</p>
+
+  <div id="lista-tiendas"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = getUser();
+if (!user || user.tipo !== 'cliente') window.location.href = '/';
+
+document.getElementById('saludo').innerHTML =
+  `<div style="background:var(--blanco);border:1px solid var(--borde);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:20px;">👋</span>
+    <div>
+      <div style="font-size:13px;color:var(--gris-text);">Hola,</div>
+      <div style="font-size:15px;font-weight:600;">${user.nombre}</div>
+    </div>
+    <div style="margin-left:auto;font-size:12px;color:var(--gris-text);">📍 ${user.direccion || ''}</div>
+  </div>`;
+
+let tiendas = [];
+
+async function cargarTiendas() {
+  tiendas = await apiGet('/tiendas');
+  const sub = document.getElementById('sub-tiendas');
+  const lista = document.getElementById('lista-tiendas');
+
+  if (!tiendas || tiendas.length === 0) {
+    sub.textContent = 'No hay tiendas registradas aún';
+    lista.innerHTML = '<div class="alert alert-info">Aún no hay tiendas disponibles en tu zona.</div>';
+    return;
+  }
+
+  const abiertas = tiendas.filter(t => t.tienda_abierta);
+  sub.textContent = `${abiertas.length} tienda(s) abiertas ahora · ${tiendas.length} en total`;
+
+  lista.innerHTML = tiendas.map(t => {
+    const pagos = t.metodos_pago ? t.metodos_pago.split(',').map(p =>
+      `<span class="badge badge-pay">${p.trim()}</span>`).join(' ') : '';
+    const estado = t.tienda_abierta
+      ? '<span class="badge badge-open">Abierta</span>'
+      : '<span class="badge badge-closed">Cerrada</span>';
+    return `
+    <div class="store-card" onclick="irCatalogo(${t.id})">
+      <div class="store-header">
+        <div class="store-avatar">🏪</div>
+        <div>
+          <div class="store-name">${t.nombre_tienda}</div>
+          <div class="store-dist">${t.barrio ? t.barrio + ' · ' : ''}${t.ciudad || 'Barranquilla'}</div>
+        </div>
+      </div>
+      <div class="store-meta">${estado} ${pagos}</div>
+      <div class="store-hours">🕐 Lun–Sab: ${t.horario_semana || '—'} · Dom: ${t.horario_domingo || '—'}</div>
+    </div>`;
+  }).join('');
+}
+
+function irCatalogo(id) {
+  const t = tiendas.find(x => x.id === id);
+  if (!t) return;
+  if (!t.tienda_abierta) {
+    alert('Esta tienda está cerrada en este momento.');
+    return;
+  }
+  localStorage.setItem('tiendaya_tienda', JSON.stringify(t));
+  window.location.href = '/pages/catalogo.html';
+}
+
+function pedirGPS() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('gps-banner').style.display = 'none';
+  });
+}
+
+cargarTiendas();
+</script>
+</body>
+</html>

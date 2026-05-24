@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar Tienda — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div style="background:var(--naranja);padding:14px 20px;display:flex;align-items:center;gap:10px;">
+  <a href="/" style="background:rgba(0,0,0,0.12);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;">←</a>
+  <span style="font-size:16px;font-weight:600;color:var(--marron);">Registrar mi tienda</span>
+</div>
+
+<div class="container-sm">
+  <div class="text-center mt-2 mb-2">
+    <div style="font-size:36px;">🏪</div>
+    <p class="text-muted">Ingresa los datos básicos. Después configuras productos y pagos.</p>
+  </div>
+
+  <div id="msg-alert"></div>
+
+  <div class="card">
+    <div class="form-group">
+      <label>Tu nombre (dueño/a)</label>
+      <input type="text" id="nombre" placeholder="Rosa Álvarez">
+    </div>
+    <div class="form-group">
+      <label>Nombre de la tienda</label>
+      <input type="text" id="nombre_tienda" placeholder="Tienda Doña Rosa">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="tel" id="telefono" placeholder="+57 300 555 1234">
+      </div>
+      <div class="form-group">
+        <label>Ciudad</label>
+        <input type="text" id="ciudad" placeholder="Barranquilla" value="Barranquilla">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Correo electrónico</label>
+      <input type="email" id="email" placeholder="correo@tienda.com">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="password" placeholder="Mínimo 6 caracteres">
+    </div>
+    <div class="form-group">
+      <label>Dirección de la tienda</label>
+      <input type="text" id="direccion" placeholder="Cra 46 # 70-20, Barranquilla">
+    </div>
+    <div class="form-group">
+      <label>Barrio</label>
+      <input type="text" id="barrio" placeholder="El Prado, Bellavista...">
+    </div>
+    <button class="btn btn-primary btn-full mt-1" onclick="registrar()">Registrar tienda →</button>
+  </div>
+
+  <p class="text-center text-muted mt-1">
+    ¿Ya tienes cuenta? <a href="/pages/login-dueno.html" style="color:var(--naranja-dark);font-weight:600;">Iniciar sesión</a>
+  </p>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+async function registrar() {
+  const alertEl = document.getElementById('msg-alert');
+  const body = {
+    nombre: document.getElementById('nombre').value.trim(),
+    nombre_tienda: document.getElementById('nombre_tienda').value.trim(),
+    telefono: document.getElementById('telefono').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    password: document.getElementById('password').value,
+    direccion: document.getElementById('direccion').value.trim(),
+    barrio: document.getElementById('barrio').value.trim(),
+    ciudad: document.getElementById('ciudad').value.trim() || 'Barranquilla'
+  };
+  if (!body.nombre || !body.nombre_tienda || !body.email || !body.password || !body.telefono || !body.direccion) {
+    return showAlert(alertEl, 'Por favor completa todos los campos');
+  }
+  if (body.password.length < 6) return showAlert(alertEl, 'La contraseña debe tener al menos 6 caracteres');
+
+  const res = await apiPost('/auth/dueno/register', body);
+  if (res.error) return showAlert(alertEl, res.error);
+
+  setUser(res);
+  showAlert(alertEl, '¡Tienda registrada! Redirigiendo...', 'success');
+  setTimeout(() => window.location.href = '/pages/panel-dueno.html', 1000);
+}
+</script>
+</body>
+</html>

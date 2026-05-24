@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TiendaYa — Tu barrio digital</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" href="/img/logo.png" type="image/svg+xml">
+</head>
+<body>
+
+<div class="splash" id="pantalla-inicio">
+  <img src="/img/logo.png" alt="TiendaYa" class="splash-logo" style="width:280px;">
+  <h1>TiendaYa</h1>
+  <p>Tu tienda de barrio al instante</p>
+  <div class="splash-btns">
+    <button class="btn btn-dark btn-full" onclick="mostrarRegistro()">Crear cuenta</button>
+    <button class="btn btn-outline btn-full" style="border-color:var(--marron);" onclick="mostrarLogin()">Iniciar sesión</button>
+  </div>
+</div>
+
+<!-- SELECTOR TIPO -->
+<div class="hidden" id="pantalla-tipo">
+  <div style="background:var(--naranja);padding:14px 20px;display:flex;align-items:center;gap:10px;">
+    <button onclick="mostrarInicio()" style="background:rgba(0,0,0,0.12);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">←</button>
+    <span style="font-size:16px;font-weight:600;color:var(--marron);" id="tipo-titulo">¿Cómo vas a usar TiendaYa?</span>
+  </div>
+  <div class="container-sm" style="padding-top:24px;">
+    <p class="page-sub" id="tipo-sub">Elige tu tipo de cuenta</p>
+    <a class="tipo-card" id="link-cliente" href="/pages/registro-cliente.html">
+      <div class="tipo-icon tipo-icon-c">🛍️</div>
+      <div>
+        <h3>Soy cliente</h3>
+        <p>Pedir a tiendas cercanas con domicilio</p>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a class="tipo-card" id="link-dueno" href="/pages/registro-dueno.html">
+      <div class="tipo-icon tipo-icon-d">🏪</div>
+      <div>
+        <h3>Soy dueño de tienda</h3>
+        <p>Gestionar pedidos, inventario y domiciliarios</p>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+  </div>
+</div>
+
+<!-- SELECTOR LOGIN -->
+<div class="hidden" id="pantalla-login-tipo">
+  <div style="background:var(--naranja);padding:14px 20px;display:flex;align-items:center;gap:10px;">
+    <button onclick="mostrarInicio()" style="background:rgba(0,0,0,0.12);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">←</button>
+    <span style="font-size:16px;font-weight:600;color:var(--marron);">¿Cómo quieres entrar?</span>
+  </div>
+  <div class="container-sm" style="padding-top:24px;">
+    <p class="page-sub">Elige tu tipo de cuenta para iniciar sesión</p>
+    <a class="tipo-card" href="/pages/login-cliente.html">
+      <div class="tipo-icon tipo-icon-c">🛍️</div>
+      <div>
+        <h3>Entrar como cliente</h3>
+        <p>Ver tiendas, pedir productos, seguir mis pedidos</p>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <a class="tipo-card" href="/pages/login-dueno.html">
+      <div class="tipo-icon tipo-icon-d">🏪</div>
+      <div>
+        <h3>Entrar como dueño</h3>
+        <p>Gestionar tienda, aceptar pedidos, inventario</p>
+      </div>
+      <span class="arrow">›</span>
+    </a>
+    <p class="text-center mt-2"><a href="#" onclick="mostrarRegistro()" style="color:var(--naranja-dark);font-weight:500;">¿No tienes cuenta? Regístrate gratis</a></p>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  // Si ya hay sesión, redirigir
+  const user = getUser();
+  if (user) {
+    if (user.tipo === 'cliente') window.location.href = '/pages/tiendas.html';
+    else window.location.href = '/pages/panel-dueno.html';
+  }
+
+  function mostrarInicio() {
+    document.getElementById('pantalla-inicio').classList.remove('hidden');
+    document.getElementById('pantalla-tipo').classList.add('hidden');
+    document.getElementById('pantalla-login-tipo').classList.add('hidden');
+  }
+  function mostrarRegistro() {
+    document.getElementById('pantalla-inicio').classList.add('hidden');
+    document.getElementById('pantalla-login-tipo').classList.add('hidden');
+    document.getElementById('pantalla-tipo').classList.remove('hidden');
+    document.getElementById('tipo-titulo').textContent = '¿Cómo vas a usar TiendaYa?';
+    document.getElementById('tipo-sub').textContent = 'Elige tu tipo de cuenta. Es gratis.';
+    document.getElementById('link-cliente').href = '/pages/registro-cliente.html';
+    document.getElementById('link-dueno').href = '/pages/registro-dueno.html';
+  }
+  function mostrarLogin() {
+    document.getElementById('pantalla-inicio').classList.add('hidden');
+    document.getElementById('pantalla-tipo').classList.add('hidden');
+    document.getElementById('pantalla-login-tipo').classList.remove('hidden');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Pedidos — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <a href="/pages/tiendas.html" style="background:rgba(0,0,0,0.12);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;">←</a>
+    <span style="font-size:15px;font-weight:600;color:var(--marron);">Mis pedidos</span>
+  </div>
+</div>
+<div class="container">
+  <div id="lista-pedidos"><p class="text-muted">Cargando...</p></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = getUser();
+if (!user || user.tipo !== 'cliente') window.location.href = '/';
+
+const estadoSteps = ['pendiente','en_preparacion','en_camino','entregado'];
+const estadoLabel = { pendiente:'Confirmado', en_preparacion:'En preparación', en_camino:'En camino', entregado:'Entregado', cancelado:'Cancelado' };
+const estadoColor = { pendiente:'var(--naranja)', en_preparacion:'#378ADD', en_camino:'var(--success)', entregado:'#aaa', cancelado:'var(--danger)' };
+
+async function cargar() {
+  const pedidos = await apiGet('/pedidos/cliente/' + user.id);
+  const lista = document.getElementById('lista-pedidos');
+  if (!pedidos || pedidos.length === 0) {
+    lista.innerHTML = `
+      <div class="text-center mt-3">
+        <div style="font-size:48px;margin-bottom:12px;">📦</div>
+        <p class="page-title">Aún no tienes pedidos</p>
+        <a href="/pages/tiendas.html" class="btn btn-primary mt-2" style="display:inline-block;">Ver tiendas</a>
+      </div>`;
+    return;
+  }
+  lista.innerHTML = pedidos.map(p => {
+    const stepIdx = estadoSteps.indexOf(p.estado);
+    const stepsHtml = estadoSteps.map((s, i) => `
+      <div class="track-step">
+        <div class="track-dot" style="background:${i<=stepIdx?estadoColor[s]:'var(--borde)'}"></div>
+        <span style="font-size:12px;color:${i<=stepIdx?'var(--marron)':'var(--gris-text)'};">${estadoLabel[s]}</span>
+        ${p.estado==='en_camino'&&s==='en_camino'&&p.domiciliario_nombre?`<span style="font-size:11px;color:var(--gris-text);margin-left:auto;">🛵 ${p.domiciliario_nombre}</span>`:''}
+      </div>
+      ${i<estadoSteps.length-1?'<div class="track-line" style="margin-left:5px;"></div>':''}
+    `).join('');
+    return `
+    <div class="card" style="border-left:4px solid ${estadoColor[p.estado]||'var(--borde)'};border-radius:0 12px 12px 0;">
+      <div class="flex flex-between mb-1">
+        <span style="font-size:13px;font-weight:600;">Pedido #${p.id} — ${p.nombre_tienda}</span>
+        ${estadoBadge(p.estado)}
+      </div>
+      <p class="text-muted" style="font-size:12px;margin-bottom:10px;">
+        ${new Date(p.fecha_pedido).toLocaleString('es-CO')} · ${p.metodo_pago}
+      </p>
+      <div style="padding:8px 0;">${stepsHtml}</div>
+      <div class="divider"></div>
+      <div class="flex flex-between">
+        <span class="text-muted">Total</span>
+        <span style="font-weight:700;">${formatCOP(p.total)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+cargar();
+setInterval(cargar, 30000); // Auto-refresh cada 30s
+</script>
+</body>
+</html>

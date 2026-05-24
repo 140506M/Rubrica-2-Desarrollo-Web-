@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmar Pago — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="topbar">
+  <span style="font-size:15px;font-weight:600;color:var(--marron);">Confirmar pago</span>
+</div>
+
+<div class="container-sm">
+  <div id="msg-alert"></div>
+
+  <div id="timer-box" class="timer-box text-center mt-2">
+    <div style="font-size:13px;color:var(--marron-light);margin-bottom:6px;">⏱️ Tienes este tiempo para confirmar tu pago</div>
+    <div class="timer-count" id="timer-display">5:00</div>
+    <div class="timer-label">Si no confirmas, el pedido se cancela automáticamente</div>
+  </div>
+
+  <div class="card mt-2" id="pago-info"></div>
+
+  <div id="btn-confirmar-wrap">
+    <button class="btn btn-primary btn-full mt-1" onclick="confirmarPago()">
+      ✅ Ya realicé el pago
+    </button>
+    <button class="btn btn-outline btn-full mt-1" onclick="cancelarPedido()">
+      Cancelar pedido
+    </button>
+  </div>
+
+  <div id="resultado" class="hidden text-center mt-3">
+    <div id="resultado-icon" style="font-size:56px;margin-bottom:12px;"></div>
+    <h2 id="resultado-titulo" class="page-title"></h2>
+    <p id="resultado-sub" class="text-muted mb-2"></p>
+    <a href="/pages/mis-pedidos.html" class="btn btn-primary">Ver mis pedidos</a>
+    <a href="/pages/tiendas.html" class="btn btn-outline mt-1" style="display:block;margin-top:10px;">Volver al inicio</a>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = getUser();
+if (!user) window.location.href = '/';
+
+const pedidoData = JSON.parse(localStorage.getItem('tiendaya_pedido_actual') || 'null');
+if (!pedidoData) window.location.href = '/pages/tiendas.html';
+
+const expiracion = new Date(pedidoData.expiracion);
+const iconosPago = { 'Nequi': '💚', 'Efectivo': '💵', 'Llave Bancolombia': '🔑', 'Daviplata': '📱' };
+let timerInterval;
+
+// Mostrar info del método de pago
+const metodo = (pedidoData.metodos_detalle || []).find(m => m.nombre === pedidoData.metodo_pago);
+document.getElementById('pago-info').innerHTML = `
+  <div style="text-align:center;margin-bottom:12px;font-size:32px;">${iconosPago[pedidoData.metodo_pago] || '💳'}</div>
+  <h3 style="text-align:center;font-size:16px;margin-bottom:4px;">${pedidoData.metodo_pago}</h3>
+  ${metodo && metodo.detalle ? `<p class="text-muted text-center" style="font-size:13px;">${metodo.detalle}</p>` : ''}
+  <div class="divider"></div>
+  <div class="flex flex-between"><span class="text-muted">Tienda</span><span>${pedidoData.tienda_nombre}</span></div>
+  <div class="flex flex-between mt-1"><span class="text-muted">Total</span><span style="font-weight:700;color:var(--naranja-dark);">${formatCOP(pedidoData.total)}</span></div>
+  <div class="alert alert-info mt-2">
+    ${pedidoData.metodo_pago === 'Efectivo'
+      ? '💵 Ten el dinero listo cuando llegue el domiciliario.'
+      : '📲 Realiza la transferencia y luego presiona "Ya realicé el pago".'}
+  </div>
+`;
+
+// Countdown
+timerInterval = setInterval(() => {
+  const ahora = new Date();
+  const diff = expiracion - ahora;
+  if (diff <= 0) {
+    clearInterval(timerInterval);
+    mostrarExpirado();
+    return;
+  }
+  const min = Math.floor(diff / 60000);
+  const seg = Math.floor((diff % 60000) / 1000);
+  document.getElementById('timer-display').textContent = `${min}:${seg.toString().padStart(2, '0')}`;
+  const box = document.getElementById('timer-box');
+  if (diff < 60000) { box.classList.add('urgente'); }
+}, 1000);
+
+async function confirmarPago() {
+  const res = await apiPut('/pedidos/' + pedidoData.pedido_id + '/confirmar', {});
+  clearInterval(timerInterval);
+  if (res.error) {
+    mostrarExpirado();
+    return;
+  }
+  localStorage.removeItem('tiendaya_pedido_actual');
+  mostrarExito();
+}
+
+async function cancelarPedido() {
+  if (!confirm('¿Seguro que quieres cancelar el pedido?')) return;
+  await apiPut('/pedidos/' + pedidoData.pedido_id + '/estado', { estado: 'cancelado' });
+  clearInterval(timerInterval);
+  localStorage.removeItem('tiendaya_pedido_actual');
+  window.location.href = '/pages/tiendas.html';
+}
+
+function mostrarExito() {
+  document.getElementById('timer-box').classList.add('hidden');
+  document.getElementById('pago-info').classList.add('hidden');
+  document.getElementById('btn-confirmar-wrap').classList.add('hidden');
+  const r = document.getElementById('resultado');
+  r.classList.remove('hidden');
+  document.getElementById('resultado-icon').textContent = '✅';
+  document.getElementById('resultado-titulo').textContent = '¡Pedido confirmado!';
+  document.getElementById('resultado-sub').textContent = 'La tienda ya recibió tu pedido y lo está preparando.';
+}
+
+function mostrarExpirado() {
+  document.getElementById('timer-box').classList.add('hidden');
+  document.getElementById('pago-info').classList.add('hidden');
+  document.getElementById('btn-confirmar-wrap').classList.add('hidden');
+  const r = document.getElementById('resultado');
+  r.classList.remove('hidden');
+  document.getElementById('resultado-icon').textContent = '❌';
+  document.getElementById('resultado-titulo').textContent = 'Pedido cancelado';
+  document.getElementById('resultado-sub').textContent = 'El tiempo para confirmar el pago expiró. Los productos se devolvieron al inventario.';
+}
+</script>
+</body>
+</html>

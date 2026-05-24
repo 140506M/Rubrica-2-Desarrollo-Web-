@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrito — TiendaYa</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <a href="/pages/catalogo.html" style="background:rgba(0,0,0,0.12);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:16px;">←</a>
+    <span style="font-size:15px;font-weight:600;color:var(--marron);">Tu carrito</span>
+  </div>
+</div>
+
+<div class="container-sm">
+  <div id="msg-alert"></div>
+  <div id="cart-body"></div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+const user = getUser();
+if (!user || user.tipo !== 'cliente') window.location.href = '/';
+const tienda = JSON.parse(localStorage.getItem('tiendaya_tienda') || 'null');
+
+let metodoPagoSel = null;
+let metodosPago = [];
+
+async function renderCarrito() {
+  const cart = getCart();
+  const body = document.getElementById('cart-body');
+
+  if (!cart.items || cart.items.length === 0) {
+    body.innerHTML = `
+      <div class="text-center mt-3">
+        <div style="font-size:48px;margin-bottom:12px;">🛒</div>
+        <p class="page-title">Tu carrito está vacío</p>
+        <a href="/pages/catalogo.html" class="btn btn-primary mt-2" style="display:inline-block;">Ver productos</a>
+      </div>`;
+    return;
+  }
+
+  // Cargar métodos de pago de la tienda
+  if (tienda) {
+    metodosPago = await apiGet('/metodos-pago/' + tienda.id);
+    metodosPago = metodosPago.filter(m => m.activo);
+    if (metodosPago.length > 0) metodoPagoSel = metodosPago[0].nombre;
+  }
+
+  const tieneKg = cart.items.some(i => i.es_peso);
+  const sub = cartTotal();
+  const envio = 2500;
+  const total = sub + envio;
+
+  const iconosPago = { 'Nequi': '💚', 'Efectivo': '💵', 'Llave Bancolombia': '🔑', 'Daviplata': '📱' };
+
+  body.innerHTML = `
+    <h2 class="page-title mt-2">Resumen del pedido</h2>
+    ${tienda ? `<p class="text-muted mb-2">📍 ${tienda.nombre_tienda}</p>` : ''}
+
+    <div class="card">
+      ${cart.items.map((item, i) => `
+        <div class="cart-item">
+          <div class="cart-item-img">${emojiCategoria('')}</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">${item.nombre}</div>
+            <div class="text-muted">${formatCOP(item.precio_unitario)} / ${item.unidad}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="qty-btn" onclick="cambiarQty(${i}, -1)">−</button>
+            <span class="qty-num">${item.cantidad}${item.es_peso ? '' : ''}</span>
+            <button class="qty-btn" onclick="cambiarQty(${i}, 1)">+</button>
+          </div>
+          <div style="font-size:13px;font-weight:700;margin-left:10px;min-width:60px;text-align:right;">${formatCOP(item.precio_unitario * item.cantidad)}</div>
+        </div>
+      `).join('')}
+
+      ${tieneKg ? `<div class="alert alert-info mt-1">⚖️ Los precios por kg/lb son estimados. Se ajustan al peso real en el despacho.</div>` : ''}
+
+      <div class="divider"></div>
+      <div class="flex flex-between mt-1"><span class="text-muted">Subtotal</span><span>${formatCOP(sub)}</span></div>
+      <div class="flex flex-between mt-1"><span class="text-muted">Domicilio</span><span>${formatCOP(envio)}</span></div>
+      <div class="flex flex-between mt-2" style="font-size:16px;font-weight:700;"><span>Total estimado</span><span style="color:var(--naranja-dark);">${formatCOP(total)}</span></div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;">Método de pago</h3>
+      <div id="metodos-pago">
+        ${metodosPago.length === 0
+          ? '<p class="text-muted">No hay métodos de pago configurados</p>'
+          : metodosPago.map(m => `
+          <div class="flex flex-center gap-1 mb-2" style="padding:10px 12px;border:2px solid ${metodoPagoSel===m.nombre?'var(--naranja)':'var(--borde)'};border-radius:12px;cursor:pointer;background:${metodoPagoSel===m.nombre?'#FFF3CD':'var(--blanco)'}" onclick="selPago('${m.nombre}')">
+            <div style="width:20px;height:20px;border-radius:50%;border:2px solid ${metodoPagoSel===m.nombre?'var(--naranja)':'var(--borde)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              ${metodoPagoSel===m.nombre?'<div style="width:10px;height:10px;border-radius:50%;background:var(--naranja);"></div>':''}
+            </div>
+            <span style="font-size:18px;">${iconosPago[m.nombre]||'💳'}</span>
+            <div style="flex:1;">
+              <div style="font-size:13px;font-weight:600;">${m.nombre}</div>
+              ${m.detalle?`<div style="font-size:11px;color:var(--gris-text);">${m.detalle}</div>`:''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">Dirección de entrega</h3>
+      <p style="font-size:13px;color:var(--marron-light);">📍 ${user.direccion || 'Sin dirección registrada'}</p>
+    </div>
+
+    <button class="btn btn-primary btn-full mt-1 mb-2" onclick="hacerPedido()" ${metodosPago.length===0?'disabled':''}>
+      Confirmar pedido · ${formatCOP(total)}
+    </button>
+  `;
+}
+
+function cambiarQty(idx, delta) {
+  let cart = getCart();
+  const item = cart.items[idx];
+  const paso = item.es_peso ? 0.5 : 1;
+  item.cantidad = Math.round((item.cantidad + delta * paso) * 10) / 10;
+  if (item.cantidad <= 0) cart.items.splice(idx, 1);
+  saveCart(cart);
+  renderCarrito();
+}
+
+function selPago(nombre) {
+  metodoPagoSel = nombre;
+  renderCarrito();
+}
+
+async function hacerPedido() {
+  if (!metodoPagoSel) return showAlert(document.getElementById('msg-alert'), 'Selecciona un método de pago');
+  const cart = getCart();
+  if (!cart.items.length) return;
+
+  const body = {
+    cliente_id: user.id,
+    dueno_id: tienda.id,
+    items: cart.items.map(i => ({
+      producto_id: i.producto_id,
+      cantidad: i.cantidad,
+      precio_unitario: i.precio_unitario
+    })),
+    metodo_pago: metodoPagoSel,
+    direccion_entrega: user.direccion,
+    costo_envio: 2500
+  };
+
+  const res = await apiPost('/pedidos', body);
+  if (res.error) return showAlert(document.getElementById('msg-alert'), res.error);
+
+  clearCart();
+  localStorage.setItem('tiendaya_pedido_actual', JSON.stringify({
+    pedido_id: res.pedido_id,
+    expiracion: res.expiracion,
+    total: res.total,
+    metodo_pago: metodoPagoSel,
+    tienda_nombre: tienda.nombre_tienda,
+    metodos_detalle: metodosPago
+  }));
+  window.location.href = '/pages/confirmacion-pago.html';
+}
+
+renderCarrito();
+</script>
+</body>
+</html>
